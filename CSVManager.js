@@ -1,18 +1,32 @@
 // CSVファイルを読み込む関数
 async function loadCSVData(url) {
-  const response = await fetch(url);
-  const text = await response.text();
-  const rows = text.split('\n').slice(1); // ヘッダーを除去
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTPエラー! 状態: ${response.status}`);
+    }
+    const text = await response.text();
+    return parseCSV(text); // 読み込んだテキストをparseCSV関数で解析
+  } catch (error) {
+    console.error('CSVファイルの読み込み中にエラーが発生しました:', error);
+    return [];
+  }
+}
+
+// テキスト形式のCSVデータをオブジェクト形式に変換する関数
+function parseCSV(csvText) {
+  const rows = csvText.split('\n');
+  const headers = rows.shift().split(',').map(header => header.trim()); // ヘッダー行を取得
 
   const data = [];
   rows.forEach(row => {
     const cols = row.split(',');
-    if (cols.length >= 3) {
-      data.push({
-        x: parseFloat(cols[0]),
-        y: parseFloat(cols[1]),
-        z: parseFloat(cols[2])
+    if (cols.length === headers.length) {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = parseFloat(cols[index].trim());
       });
+      data.push(obj);
     }
   });
   return data;
@@ -48,4 +62,4 @@ function calculateMinMax(data) {
   return { min, max };
 }
 
-export { loadCSVData, normalizeData, calculateMinMax };
+export { loadCSVData, parseCSV, normalizeData, calculateMinMax };
